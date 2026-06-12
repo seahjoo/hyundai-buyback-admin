@@ -1,0 +1,8 @@
+.next
+node_modules
+.env.local
+credentials/
+.DS_Store
+tsconfig.tsbuildinfo
+antures-kiosk/
+kiosk-showcase/

@@ -1,0 +1,59 @@
+{
+  "months": {
+    "2025-07": {
+      "payoutAmount": 19539000,
+      "confirmed": true,
+      "confirmedAt": "seed"
+    },
+    "2025-08": {
+      "payoutAmount": 11375000,
+      "confirmed": true,
+      "confirmedAt": "seed"
+    },
+    "2025-09": {
+      "payoutAmount": 6591000,
+      "confirmed": true,
+      "confirmedAt": "seed"
+    },
+    "2025-10": {
+      "payoutAmount": 11085000,
+      "confirmed": true,
+      "confirmedAt": "seed"
+    },
+    "2025-11": {
+      "payoutAmount": 9570000,
+      "confirmed": true,
+      "confirmedAt": "seed"
+    },
+    "2025-12": {
+      "payoutAmount": 12100000,
+      "confirmed": true,
+      "confirmedAt": "seed"
+    },
+    "2026-01": {
+      "payoutAmount": 7040000,
+      "confirmed": true,
+      "confirmedAt": "seed"
+    },
+    "2026-02": {
+      "payoutAmount": 5380000,
+      "confirmed": true,
+      "confirmedAt": "seed"
+    },
+    "2026-03": {
+      "payoutAmount": 16287000,
+      "confirmed": true,
+      "confirmedAt": "seed"
+    },
+    "2026-04": {
+      "payoutAmount": 20096000,
+      "confirmed": true,
+      "confirmedAt": "seed"
+    },
+    "2026-05": {
+      "payoutAmount": 8997000,
+      "confirmed": true,
+      "confirmedAt": "2026-06-01T01:19:10.602Z"
+    }
+  }
+}
