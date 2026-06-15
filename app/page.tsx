@@ -11,7 +11,7 @@ export default async function DashboardPage() {
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-8 px-5 py-8 sm:px-8 lg:px-10">
       <section className="overflow-hidden rounded-[36px] border border-white/70 bg-[var(--surface)] p-8 shadow-[var(--shadow)] backdrop-blur">
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-teal-700">
-          Hyundai Admin
+          THE HYUNDAI ADMIN
         </p>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
           더현대바이백 운영 대시보드
