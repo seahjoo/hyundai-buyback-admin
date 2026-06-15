@@ -500,7 +500,7 @@ function SectionBlock({
       <TrendChart
         rows={rows}
         label={label}
-        title={`${sectionTitle} 추이`}
+        title="기간별 추이"
         showPassRate={showPassRate}
         visibleMetrics={
           showPopupCards
@@ -510,7 +510,7 @@ function SectionBlock({
       />
       <SummaryTable
         rows={rows}
-        title={`${sectionTitle} 일별 집계`}
+        title="일별 집계"
         applicantCountTotal={applicantCount}
         showAmount={showAmount}
         showPassRate={showPassRate}
@@ -828,7 +828,7 @@ export function DashboardClient({
         />
       ) : (
         <SectionBlock
-          sectionTitle="팝업 집계용"
+          sectionTitle="팝업"
           sectionDescription="선택한 지점과 연도에 해당하는 팝업 행사 중, 사전신청 및 현장신청을 통해 접수된 건을 집계합니다"
           rows={popupDailyRows}
           applicantCount={popupApplicantCount}

@@ -26,7 +26,7 @@ export function AppShell({ children, session }: AppShellProps) {
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 sm:px-8 lg:px-10">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-teal-700 sm:text-base">
-              HYUNDAI BUYBACK ADMIN
+              THE HYUNDAI BUYBACK ADMIN
             </p>
           </div>
           {session ? (

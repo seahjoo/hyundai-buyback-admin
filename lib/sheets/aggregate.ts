@@ -433,7 +433,7 @@ function buildDashboardMetrics(
     sections: {
       overall: {
         key: "overall",
-        title: "더현대바이백 전체",
+        title: "더현대 바이백 전체",
         description: "일별 신청자수, 가입자수, 매입 전환 흐름을 전체 기준으로 확인합니다.",
         dailyRows: [...sortedDailyRows].reverse(),
       },
