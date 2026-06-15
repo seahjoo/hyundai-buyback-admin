@@ -4,7 +4,7 @@ import { getCurrentSession } from "@/lib/auth/session";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "THE 현대 바이백 어드민",
+  title: "Hyundai Buyback Admin",
   description: "현대 바이백 운영 대시보드",
 };
 
