@@ -148,6 +148,21 @@ export const OPTIONAL_COLUMN_CANDIDATES: OptionalColumnCandidates = {
     "확정포인트",
     "확정 포인트",
   ],
+  itemState: [
+    "state",
+    "item_state",
+    "item state",
+    "상태",
+    "진행상태코드",
+  ],
+  address: [
+    "address",
+    "주소",
+    "addr",
+    "user_address",
+    "customer_address",
+    "shipping_address",
+  ],
 };
 
 const ENV_FIELD_KEYS: Record<CanonicalField, string> = {
@@ -163,6 +178,8 @@ const OPTIONAL_ENV_FIELD_KEYS: Record<OptionalCanonicalField, string> = {
   routeCode: "GOOGLE_SHEET_COLUMN_ROUTE_CODE",
   storeCode: "GOOGLE_SHEET_COLUMN_STORE_CODE",
   confirmedCredit: "GOOGLE_SHEET_COLUMN_CONFIRMED_CREDIT",
+  itemState: "GOOGLE_SHEET_COLUMN_ITEM_STATE",
+  address: "GOOGLE_SHEET_COLUMN_ADDRESS",
 };
 
 export function getConfiguredColumnOverrides(): Partial<Record<CanonicalField, string>> {

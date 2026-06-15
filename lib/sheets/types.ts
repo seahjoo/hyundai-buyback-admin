@@ -9,7 +9,9 @@ export type OptionalCanonicalField =
   | "channel"
   | "routeCode"
   | "storeCode"
-  | "confirmedCredit";
+  | "confirmedCredit"
+  | "itemState"
+  | "address";
 
 export type ColumnCandidates = Record<CanonicalField, string[]>;
 export type OptionalColumnCandidates = Record<OptionalCanonicalField, string[]>;
@@ -19,13 +21,16 @@ export type ResolvedOptionalColumnMap = Partial<Record<OptionalCanonicalField, s
 
 export interface PurchaseRow {
   date: string;
+  occurredAt: string;
   itemPackageId: string;
   itemId: string;
   purchaseStatus: string;
+  itemState: string;
   applicantId: string;
   channel: "store" | "online" | "unknown";
   routeCode: string;
   storeCode: string;
+  address: string;
   confirmedCredit: number;
 }
 
@@ -33,6 +38,7 @@ export interface SignupRow {
   date: string;
   pathState: string;
   branchState: string;
+  address: string;
 }
 
 export interface DailyPurchaseMetrics {

@@ -30,12 +30,13 @@ type Preset = "7d" | "30d" | "all" | "custom";
 
 const POPUP_ROUTE_CODES = new Set(["OF", "FF", "TS", "HP"]);
 const NON_POPUP_CODES = new Set(["", "0", "OO"]);
-const COMPLETED_STATUS_KEYWORDS = ["매입완료", "검수통과", "통과", "confirmed", "complete"];
 const STORE_LABELS: Record<string, string> = {
   TS: "더현대서울",
   HP: "판교점",
 };
 const POPUP_STORE_CODES = new Set(Object.keys(STORE_LABELS));
+const REQUEST_STATE = "P0";
+const COMPLETED_STATE = "C6";
 
 function clampDate(value: string, min: string, max: string) {
   if (!value) return value;
@@ -231,11 +232,6 @@ function calculatePopupToNormalReuseRate(
   return `${((reusedApplicants / firstPopupByApplicant.size) * 100).toFixed(1)}%`;
 }
 
-function isCompletedStatus(value: string) {
-  const normalized = value.trim().toLowerCase();
-  return COMPLETED_STATUS_KEYWORDS.some((keyword) => normalized.includes(keyword));
-}
-
 function getStoreLabel(storeCode: string) {
   return STORE_LABELS[storeCode] ?? storeCode;
 }
@@ -352,6 +348,7 @@ function buildDailyMetrics(
       packageIds: Set<string>;
       itemIds: Set<string>;
       completedItemIds: Set<string>;
+      completedPackageIds: Set<string>;
       onlinePackageIds: Set<string>;
       storePackageIds: Set<string>;
       applicantIds: Set<string>;
@@ -365,22 +362,24 @@ function buildDailyMetrics(
         packageIds: new Set<string>(),
         itemIds: new Set<string>(),
         completedItemIds: new Set<string>(),
+        completedPackageIds: new Set<string>(),
         onlinePackageIds: new Set<string>(),
         storePackageIds: new Set<string>(),
         applicantIds: new Set<string>(),
       };
 
-    if (row.itemPackageId) {
+    if (row.itemPackageId && row.itemState === REQUEST_STATE) {
       current.packageIds.add(row.itemPackageId);
       if (isPopupOnlineRequest(row)) current.onlinePackageIds.add(row.itemPackageId);
       if (isPopupStoreRequest(row)) current.storePackageIds.add(row.itemPackageId);
     }
 
-    if (row.itemId) current.itemIds.add(row.itemId);
-    if (isCompletedStatus(row.purchaseStatus)) {
+    if (row.itemId && row.itemState === REQUEST_STATE) current.itemIds.add(row.itemId);
+    if (row.itemState === COMPLETED_STATE) {
       if (row.itemId) current.completedItemIds.add(row.itemId);
+      if (row.itemPackageId) current.completedPackageIds.add(row.itemPackageId);
     }
-    if (row.applicantId) current.applicantIds.add(row.applicantId);
+    if (row.applicantId && row.itemState === REQUEST_STATE) current.applicantIds.add(row.applicantId);
 
     byDate.set(row.date, current);
   });
@@ -395,12 +394,13 @@ function buildDailyMetrics(
           packageIds: new Set<string>(),
           itemIds: new Set<string>(),
           completedItemIds: new Set<string>(),
+          completedPackageIds: new Set<string>(),
           onlinePackageIds: new Set<string>(),
           storePackageIds: new Set<string>(),
           applicantIds: new Set<string>(),
         };
 
-      const purchaseAmount = [...current.packageIds].reduce(
+      const purchaseAmount = [...current.completedPackageIds].reduce(
         (sum, packageId) => sum + (packageCreditByPackageId[packageId] ?? 0),
         0,
       );
@@ -672,7 +672,7 @@ export function DashboardClient({
   const popupApplicantVisits = useMemo(
     () =>
       popupRows
-        .filter((row) => row.applicantId)
+        .filter((row) => row.applicantId && row.itemState === REQUEST_STATE)
         .map((row) => ({ date: row.date, applicantId: row.applicantId })),
     [popupRows],
   );

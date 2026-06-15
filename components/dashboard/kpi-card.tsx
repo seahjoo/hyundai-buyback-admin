@@ -6,9 +6,9 @@ interface KpiCardProps {
 }
 
 const toneClasses = {
-  teal: "from-violet-100/58 via-purple-50/30 to-white/18 text-slate-900",
-  amber: "from-violet-100/56 via-purple-50/28 to-white/18 text-slate-900",
-  slate: "from-violet-100/52 via-indigo-50/24 to-white/18 text-slate-900",
+  teal: "from-fuchsia-100/62 via-pink-50/34 to-white/18 text-slate-900",
+  amber: "from-purple-100/58 via-fuchsia-50/30 to-white/18 text-slate-900",
+  slate: "from-violet-100/58 via-pink-50/28 to-white/18 text-slate-900",
 };
 
 export function KpiCard({ title, value, tone, caption }: KpiCardProps) {

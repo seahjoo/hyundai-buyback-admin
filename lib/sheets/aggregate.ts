@@ -20,8 +20,6 @@ import type {
   SignupRow,
 } from "@/lib/sheets/types";
 
-const COMPLETED_STATUS_KEYWORDS = ["매입완료", "검수통과", "통과", "confirmed", "complete"];
-
 const CREDIT_COLUMN_CANDIDATES = {
   itemPackageId: ["패키지id", "패키지 id", "itempackage_id", "item package id"],
   chargeAmount: ["충전금액", "충전 금액", "credit", "confirmed_credit", "amount"],
@@ -31,7 +29,15 @@ const USER_COLUMN_CANDIDATES = {
   date: ["created_at", "created at", "date", "가입일", "등록일", "일자"],
   pathState: ["path_state", "path state", "가입경로", "가입 경로"],
   branchState: ["branch_state", "branch state", "가입지점", "가입 지점"],
+  address: ["address", "주소", "addr", "user_address", "customer_address"],
 } as const;
+const REQUEST_STATE = "P0";
+const COMPLETED_STATE = "C6";
+const EXCLUDED_ITEM_STATES = new Set(["F1", "F2", "P2", "C2"]);
+const QA_ADDRESS_FRAGMENT = "서울 서초구 서초대로 396";
+const QA_POPUP_CUTOFF = "2026-06-12 09:10:00";
+const POPUP_ROUTE_CODES = new Set(["OF", "FF", "TS", "HP"]);
+const POPUP_STORE_CODES = new Set(["TS", "HP"]);
 
 function normalizeHeader(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
@@ -43,6 +49,45 @@ function normalizeText(value: string) {
 
 function normalizeCode(value: string) {
   return value.trim().toUpperCase();
+}
+
+function normalizeAddress(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function isQaAddress(value: string) {
+  return normalizeAddress(value).includes(normalizeAddress(QA_ADDRESS_FRAGMENT));
+}
+
+function normalizeDateTime(rawValue: string) {
+  const trimmed = rawValue.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  const normalized = trimmed.replace(/\./g, "-").replace(/\//g, "-").replace(/\s+/g, " ").trim();
+  const dateTimeMatch = normalized.match(
+    /^(\d{4})-(\d{1,2})-(\d{1,2})(?:\s+(\d{1,2}))?(?::(\d{1,2}))?(?::(\d{1,2}))?/,
+  );
+
+  if (!dateTimeMatch) {
+    return normalized;
+  }
+
+  const [, year, month, day, hour = "0", minute = "0", second = "0"] = dateTimeMatch;
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")} ${hour.padStart(2, "0")}:${minute.padStart(2, "0")}:${second.padStart(2, "0")}`;
+}
+
+function isPopupRoute(routeCode: string, storeCode: string) {
+  return POPUP_ROUTE_CODES.has(routeCode) || POPUP_STORE_CODES.has(storeCode);
+}
+
+function isQaPopupBeforeCutoff(occurredAt: string, routeCode: string, storeCode: string) {
+  if (!occurredAt) {
+    return false;
+  }
+
+  return isPopupRoute(routeCode, storeCode) && occurredAt < QA_POPUP_CUTOFF;
 }
 
 function makeHeaderLookup(headers: string[]) {
@@ -161,11 +206,6 @@ function parseNumber(rawValue: string) {
   return Number.isFinite(value) ? value : 0;
 }
 
-function isCompletedStatus(value: string) {
-  const normalized = normalizeText(value);
-  return COMPLETED_STATUS_KEYWORDS.some((keyword) => normalized.includes(keyword));
-}
-
 function normalizeChannel(value: string) {
   const normalized = normalizeText(value);
   if (!normalized) {
@@ -188,9 +228,11 @@ function mapPurchaseRows(
   return rawRows
     .map((row) => ({
       date: normalizeDate(row[columns.date]) ?? "",
+      occurredAt: normalizeDateTime(row[columns.date] ?? ""),
       itemPackageId: row[columns.itemPackageId]?.trim() ?? "",
       itemId: row[columns.itemId]?.trim() ?? "",
       purchaseStatus: row[columns.purchaseStatus]?.trim() ?? "",
+      itemState: optionalColumns.itemState ? normalizeCode(row[optionalColumns.itemState] ?? "") : "",
       applicantId: optionalColumns.visitorId
         ? normalizeApplicantId(row[optionalColumns.visitorId] ?? "")
         : "",
@@ -203,9 +245,16 @@ function mapPurchaseRows(
       storeCode: optionalColumns.storeCode
         ? normalizeCode(row[optionalColumns.storeCode] ?? "")
         : "",
+      address: optionalColumns.address ? row[optionalColumns.address]?.trim() ?? "" : "",
       confirmedCredit: 0,
     }))
-    .filter((row) => row.date);
+    .filter(
+      (row) =>
+        row.date &&
+        !EXCLUDED_ITEM_STATES.has(row.itemState) &&
+        !isQaAddress(row.address) &&
+        !isQaPopupBeforeCutoff(row.occurredAt, row.routeCode, row.storeCode),
+    );
 }
 
 function buildPackageCreditMap(csvText: string) {
@@ -233,6 +282,7 @@ function buildSignupRows(csvText: string) {
   const dateColumn = resolveCandidates(headers, USER_COLUMN_CANDIDATES.date);
   const pathStateColumn = resolveCandidates(headers, USER_COLUMN_CANDIDATES.pathState);
   const branchStateColumn = resolveCandidates(headers, USER_COLUMN_CANDIDATES.branchState);
+  const addressColumn = resolveCandidates(headers, USER_COLUMN_CANDIDATES.address);
 
   if (!dateColumn || !pathStateColumn || !branchStateColumn) {
     throw new Error("users_raw sheet must include date, path_state, and branch_state columns.");
@@ -244,9 +294,10 @@ function buildSignupRows(csvText: string) {
         date: normalizeDate(row[dateColumn] ?? "") ?? "",
         pathState: normalizeCode(row[pathStateColumn] ?? ""),
         branchState: normalizeCode(row[branchStateColumn] ?? ""),
+        address: addressColumn ? row[addressColumn]?.trim() ?? "" : "",
       }),
     )
-    .filter((row) => row.date);
+    .filter((row) => row.date && !isQaAddress(row.address));
 }
 
 function buildSignupCountByDate(signupRows: SignupRow[]) {
@@ -271,6 +322,7 @@ function buildDailyMetrics(
       packageIds: Set<string>;
       itemIds: Set<string>;
       completedItemIds: Set<string>;
+      completedPackageIds: Set<string>;
       onlinePackageIds: Set<string>;
       storePackageIds: Set<string>;
       applicantIds: Set<string>;
@@ -284,12 +336,13 @@ function buildDailyMetrics(
         packageIds: new Set<string>(),
         itemIds: new Set<string>(),
         completedItemIds: new Set<string>(),
+        completedPackageIds: new Set<string>(),
         onlinePackageIds: new Set<string>(),
         storePackageIds: new Set<string>(),
         applicantIds: new Set<string>(),
       };
 
-    if (row.itemPackageId) {
+    if (row.itemPackageId && row.itemState === REQUEST_STATE) {
       current.packageIds.add(row.itemPackageId);
       if (row.routeCode === "OF") {
         current.onlinePackageIds.add(row.itemPackageId);
@@ -299,13 +352,16 @@ function buildDailyMetrics(
       }
     }
 
-    if (row.itemId) {
+    if (row.itemId && row.itemState === REQUEST_STATE) {
       current.itemIds.add(row.itemId);
     }
-    if (isCompletedStatus(row.purchaseStatus) && row.itemId) {
+    if (row.itemState === COMPLETED_STATE && row.itemId) {
       current.completedItemIds.add(row.itemId);
     }
-    if (row.applicantId) {
+    if (row.itemState === COMPLETED_STATE && row.itemPackageId) {
+      current.completedPackageIds.add(row.itemPackageId);
+    }
+    if (row.applicantId && row.itemState === REQUEST_STATE) {
       current.applicantIds.add(row.applicantId);
     }
 
@@ -325,12 +381,13 @@ function buildDailyMetrics(
           packageIds: new Set<string>(),
           itemIds: new Set<string>(),
           completedItemIds: new Set<string>(),
+          completedPackageIds: new Set<string>(),
           onlinePackageIds: new Set<string>(),
           storePackageIds: new Set<string>(),
           applicantIds: new Set<string>(),
         };
 
-      const purchaseAmount = [...current.packageIds].reduce(
+      const purchaseAmount = [...current.completedPackageIds].reduce(
         (sum, packageId) => sum + (packageCreditByPackageId[packageId] ?? 0),
         0,
       );
@@ -352,7 +409,7 @@ function buildDailyMetrics(
 
 function buildApplicantVisits(rows: PurchaseRow[]): ApplicantVisit[] {
   return rows
-    .filter((row) => row.applicantId)
+    .filter((row) => row.applicantId && row.itemState === REQUEST_STATE)
     .map((row) => ({
       date: row.date,
       applicantId: row.applicantId,
